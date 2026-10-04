@@ -1,4 +1,6 @@
-FROM php:8.4-apache
+# osTicket 1.18.x supports PHP 8.1-8.2. PHP 8.4 removed the bundled imap extension,
+# so do NOT bump this to 8.4 without moving imap to PECL.
+FROM php:8.2-apache
 
 # System dependencies
 RUN apt-get update && apt-get install -y \
@@ -57,8 +59,22 @@ RUN printf '<Directory /var/www/html>\n\
     > /etc/apache2/conf-available/osticket.conf \
     && a2enconf osticket
 
+# Suppress Apache FQDN warning
+RUN echo 'ServerName localhost' > /etc/apache2/conf-available/servername.conf \
+    && a2enconf servername
+
+# Entrypoint keeps include/ost-config.php on a persistent volume (/data) so the
+# web installer result survives redeploys.
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN sed -i 's/\r$//' /usr/local/bin/docker-entrypoint.sh \
+    && chmod +x /usr/local/bin/docker-entrypoint.sh \
+    && mkdir -p /data
+
+VOLUME ["/data"]
+
 WORKDIR /var/www/html
 
 EXPOSE 80
 
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 CMD ["apache2-foreground"]
