@@ -1,6 +1,7 @@
 # osTicket 1.18.x supports PHP 8.1-8.2. PHP 8.4 removed the bundled imap extension,
 # so do NOT bump this to 8.4 without moving imap to PECL.
-FROM php:8.2-apache
+# Pinned to bookworm: Debian trixie no longer ships libc-client-dev (needed for imap).
+FROM php:8.2-apache-bookworm
 
 # System dependencies
 RUN apt-get update && apt-get install -y \
